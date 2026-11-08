@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101827">
+<title>Zombie Siege</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#0c1421;color:#f4f7ff;font:15px system-ui,-apple-system,sans-serif}
+header{background:linear-gradient(110deg,#17263b,#20364b);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-bottom:1px solid #38516c}
+h1{margin:0;color:#91f2a8;font-size:22px;letter-spacing:.3px}.stats{display:flex;gap:13px;flex-wrap:wrap;font-weight:700}
+main{max-width:1000px;margin:auto;padding:12px}.panel{background:linear-gradient(145deg,#1b2b42,#172438);border:1px solid #314965;border-radius:15px;padding:12px;margin:10px 0;box-shadow:0 7px 20px #0003}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}button,select{border:1px solid #4a6684;background:#344e6b;color:#fff;border-radius:10px;padding:10px 12px;font-weight:750;font-size:14px}
+button:active{transform:translateY(1px)}button:disabled{opacity:.45}.primary{background:linear-gradient(#42c27e,#26965d);border-color:#65d89a;color:#061b10}.smallbtn{margin-left:auto}
+#mapWrap{position:relative;overflow:hidden;border:2px solid #567b61;border-radius:14px;background:#244d35;box-shadow:inset 0 0 25px #07130c}
+#arena{display:block;width:100%;height:280px;touch-action:manipulation}
+#mapWrap.full #arena{height:min(68vh,620px)}
+#mapHint{position:absolute;left:10px;top:9px;background:#101bca99;background:#101bca99;color:white;padding:5px 8px;border-radius:7px;font-size:11px;pointer-events:none}
+.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px}
+.tools button{padding:9px 3px;min-height:64px;font-size:12px;line-height:1.35;background:linear-gradient(145deg,#3b5877,#2a405a)}
+.tools button.selected{outline:3px solid #a5f4b0;background:linear-gradient(145deg,#456b59,#304e43)}
+#msg{color:#c4dcff;min-height:20px;font-size:13px;margin-top:8px}
+small{color:#c2d0df}.sectionTitle{font-weight:800;letter-spacing:.3px}
+@media(min-width:700px){#arena{height:350px}#mapWrap.full #arena{height:620px}.tools button{font-size:14px}}
+
+#towerShop button{flex:1;min-width:135px;text-align:left}
+.ownedItem{padding:7px 9px;background:#263c55;border-radius:8px;margin:5px 0;font-size:13px}
+#afkPanel .row>*{flex:1}
+
+#collectionPanel,#afkPanel{position:relative;overflow:hidden;background:radial-gradient(ellipse at 100% 0%,#38577a66,transparent 48%),linear-gradient(145deg,#1b2b42,#111e31)}
+#towerShop{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+#towerShop button{min-width:0;min-height:82px;border-radius:12px;background:linear-gradient(145deg,#385675,#20364e);box-shadow:inset 0 1px #ffffff22,0 5px 12px #0003}
+#towerShop button:disabled{opacity:.75;background:linear-gradient(145deg,#315b48,#203d34);color:#d8ffe2}
+.ownedItem{display:flex;align-items:center;gap:8px;padding:9px 10px;background:linear-gradient(90deg,#2b4561,#20344d);border:1px solid #47627e;border-radius:10px;margin:6px 0;font-size:13px}
+.ownedItem button{margin-left:auto;padding:6px 10px}
+#afkMachineArt{height:112px;border-radius:12px;margin:10px 0;background:radial-gradient(circle at 50% 55%,#4ddc9a44,transparent 38%),linear-gradient(120deg,#142b40,#203e50);display:flex;align-items:center;justify-content:center;gap:14px;border:1px solid #416985}
+.machine{width:66px;height:78px;border-radius:12px;border:3px solid #91c8dc;background:linear-gradient(145deg,#385a75,#142a40);box-shadow:0 0 18px #4ddc9a55,inset 0 0 12px #9be9ff33;display:grid;place-items:center;font-size:32px;position:relative}
+.machine:after{content:'';position:absolute;bottom:6px;width:34px;height:5px;border-radius:5px;background:#59e6a1;box-shadow:0 0 10px #59e6a1}
+.machine.locked{opacity:.35;filter:grayscale(1)}
+.meter{height:9px;background:#0c1726;border-radius:20px;overflow:hidden;border:1px solid #46617a;margin:7px 0 12px}
+.meter>div{height:100%;width:0;background:linear-gradient(90deg,#43bd7c,#b5ff8a);box-shadow:0 0 12px #5af19b}
+.metaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.metaStat{padding:9px;border-radius:10px;background:#263d57;border:1px solid #3e5d7b}
+.metaStat b{display:block;font-size:17px;color:#b8f5ca}
+@media(max-width:420px){.metaGrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><h1>🧟 Zombie Siege</h1><div class="stats"><span>💰 $<b id="cash">220</b></span><span>🌊 Wave <b id="wave">0</b>/10</span><span>❤️ <b id="hp">20</b></span></div></header>
+<main>
+<section class="panel">
+ <div class="row"><label>🗺️ Map <select id="map"><option value="0">Green Fields</option><option value="1">Desert Outpost</option><option value="2">Night Woods</option></select></label><button class="primary" id="start">▶ Start Wave</button><button class="smallbtn" id="size">⛶ Full-size map</button></div>
+ <div id="msg">Choose a tower, tap an open grass spot to place it, then start a wave.</div>
+</section>
+<div id="mapWrap"><canvas id="arena" width="960" height="600"></canvas><div id="mapHint">TACTICAL VIEW · TAP TO BUILD</div></div>
+<section class="panel">
+ <div class="sectionTitle">🛠️ Build your defenses</div>
+ <div class="tools" id="tools">
+  <button class="selected" data-t="scout">🔫 SCOUT<br>$55 · balanced</button>
+  <button data-t="rapid">⚡ RAPID<br>$95 · fast fire</button>
+  <button data-t="cannon">💥 CANNON<br>$140 · heavy</button>
+  <button data-t="support">✨ SUPPORT<br>$110 · boost</button>
+ </div>
+ <div class="row" style="margin-top:9px"><button id="upgrade">⬆ Upgrade selected</button><button id="cancel">Cancel selection</button></div>
+ <small>Tap a placed turret to select it. Place defenses on grass, not on the road or another turret.</small>
+</section>
+
+<section class="panel" id="collectionPanel">
+ <div class="sectionTitle">🏰 Tower Collection & Buffs</div>
+ <p><small>Unlock more defenses, then equip up to 10 attacking turrets and 10 support towers.</small></p>
+ <div class="row" style="margin:8px 0"><b>🪙 Siege tokens: <span id="tokens">0</span></b><span>Attacking: <b id="attackCount">4</b>/10</span><span>Support: <b id="supportCount">1</b>/10</span></div>
+ <div class="sectionTitle" style="margin:10px 0 6px">🔓 RESEARCH LAB · Unlock blueprints</div><div id="towerShop"></div>
+ <div class="sectionTitle" style="margin:13px 0 6px">🎖️ YOUR ARMORY · Equip your loadout</div><div id="ownedTowers" style="margin-top:9px"></div>
+ <small>Support towers provide nearby defenses with boosts. They do not attack enemies themselves.</small>
+</section>
+<section class="panel" id="afkPanel">
+ <div class="sectionTitle">🌙 AFK Zone</div>
+ <p><small>Your AFK machine earns coins while you're away. Earnings are saved on this device, up to 8 hours.</small></p>
+ <div id="afkMachineArt"><div class="machine" id="machineArt1">⚙️</div><div class="machine locked" id="machineArt2">🔒</div><div class="machine locked" id="machineArt3">🔒</div></div>
+ <div class="metaGrid"><div class="metaStat">⚡ Production rate<b><span id="afkRate">5</span> coins/min</b></div><div class="metaStat">🏭 Generator level<b id="machineLevel">1</b></div></div>
+ <div class="meter"><div id="afkMeter"></div></div>
+ <p>Unclaimed AFK coins: <b id="afkPending">0</b></p>
+ <div class="row"><button class="primary" id="claimAfk">💰 Collect AFK coins</button><button id="upgradeMachine">⬆ Upgrade machine · $<span id="machineCost">150</span></button></div>
+ <div class="row" style="margin-top:8px"><button id="buyMachine">🔓 Unlock second machine · 5 tokens</button><button id="afkBoost">✨ AFK boost · 3 tokens</button></div>
+ <small>Tokens are earned by clearing waves. AFK progress is local to this browser until online accounts are added.</small>
+</section>
+
+</main>
+<script>
+(()=>{
+const canvas=document.getElementById('arena'),g=canvas.getContext('2d'),$=id=>document.getElementById(id);
+let cash=220,wave=0,hp=20,kind='scout',towers=[],zombies=[],shots=[],running=false,spawned=0,frame=0,chosen=-1;
+let tokens=0,machineLevel=1,afkMachines=1,afkBoostLevel=0,owned={scout:true,rapid:true,cannon:true,support:true},equipped={scout:true,rapid:true,cannon:true,support:true};
+const shopDefs={sniper:{name:'🎯 Sniper',cost:6,role:'attack',price:175,range:280,damage:58,rate:100},flame:{name:'🔥 Flame',cost:8,role:'attack',price:165,range:115,damage:9,rate:8},frost:{name:'❄️ Frost',cost:8,role:'attack',price:155,range:165,damage:7,rate:24},medic:{name:'💚 Medic Buff',cost:5,role:'support',price:125},rangebuff:{name:'📡 Radar Buff',cost:7,role:'support',price:140}};
+function loadMeta(){try{let d=JSON.parse(localStorage.getItem('zs_meta')||'{}');tokens=d.tokens||0;machineLevel=d.machineLevel||1;afkMachines=d.afkMachines||1;afkBoostLevel=d.afkBoostLevel||0;owned={...owned,...(d.owned||{})};equipped={...equipped,...(d.equipped||{})}}catch(e){}}
+function saveMeta(){try{localStorage.setItem('zs_meta',JSON.stringify({tokens,machineLevel,afkMachines,afkBoostLevel,owned,equipped,last:Date.now()}))}catch(e){}}
+function pendingAfk(){let last=Number(localStorage.getItem('zs_afk_last')||Date.now());return Math.floor(Math.min(480,Math.max(0,(Date.now()-last)/60000))*(5*machineLevel*afkMachines*(1+afkBoostLevel*.25)))}
+function renderMeta(){
+ const rate=5*machineLevel*afkMachines*(1+afkBoostLevel*.25);
+ $('tokens').textContent=tokens;$('machineLevel').textContent=machineLevel;$('afkRate').textContent=rate;$('afkPending').textContent=pendingAfk();$('machineCost').textContent=150*machineLevel;
+ $('afkMeter').style.width=(Math.min(480,pendingAfk()/Math.max(1,rate)*100)/480*100)+'%';
+ for(let i=1;i<=3;i++){let el=$('machineArt'+i);if(el){el.classList.toggle('locked',i>afkMachines);el.textContent=i<=afkMachines?'⚙️':'🔒'}}
+ let attack=Object.keys(equipped).filter(k=>equipped[k]&&(specs[k]||shopDefs[k]?.role==='attack')).length;
+ let support=Object.keys(equipped).filter(k=>equipped[k]&&(k==='support'||shopDefs[k]?.role==='support')).length;
+ $('attackCount').textContent=attack;$('supportCount').textContent=support;
+ $('towerShop').innerHTML=Object.entries(shopDefs).map(([k,v])=>`<button data-buy="${k}" ${owned[k]?'disabled':''}>${v.name}<br><small>${owned[k]?'✓ BLUEPRINT OWNED':'🔹 '+v.cost+' TOKENS'}</small></button>`).join('');
+ $('ownedTowers').innerHTML=Object.keys(owned).filter(k=>owned[k]).map(k=>`<div class="ownedItem"><span>${(shopDefs[k]?.name||({scout:'🔫 Scout',rapid:'⚡ Rapid',cannon:'💥 Cannon',support:'✨ Support'}[k]))}</span><small>${equipped[k]?'● Equipped':'○ In storage'}</small><button data-equip="${k}">${equipped[k]?'Unequip':'Equip'}</button></div>`).join('')+'<div class="row" style="margin-top:8px">'+Object.keys(shopDefs).filter(k=>owned[k]&&equipped[k]).map(k=>`<button data-build="${k}">${shopDefs[k].name} · $${specs[k].cost}</button>`).join('')+'</div>';
+}
+const specs={scout:{cost:55,range:155,damage:13,rate:36},rapid:{cost:95,range:175,damage:6,rate:11},cannon:{cost:140,range:195,damage:38,rate:78},support:{cost:110,range:145,damage:0,rate:0},sniper:{cost:175,range:280,damage:58,rate:100},flame:{cost:165,range:115,damage:9,rate:8},frost:{cost:155,range:165,damage:7,rate:24},medic:{cost:125,range:145,damage:0,rate:0},rangebuff:{cost:140,range:145,damage:0,rate:0}};
+const paths=[
+ [[-25,300],[175,300],[175,135],[430,135],[430,455],[700,455],[700,270],[990,270]],
+ [[-25,300],[160,300],[160,115],[400,115],[400,470],[710,470],[710,285],[990,285]],
+ [[-25,310],[180,310],[180,140],[420,140],[420,470],[715,470],[715,280],[990,280]]
+];
+let decor=[];
+function rand(seed){let x=Math.sin(seed*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+function makeDecor(){decor=[];for(let i=0;i<115;i++){let x=20+rand(i+3)*920,y=18+rand(i+501)*564;if(!onRoad(x,y,46))decor.push({x,y,r:5+rand(i+91)*11,type:rand(i+701)})}}
+function onRoad(x,y,margin=38){let p=paths[+$('map').value];for(let i=0;i<p.length-1;i++){let a=p[i],b=p[i+1],dx=b[0]-a[0],dy=b[1]-a[1],q=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));if(Math.hypot(x-a[0]-q*dx,y-a[1]-q*dy)<margin)return true}return false}
+function path(){return paths[+$('map').value]}
+function scenery(){let m=+$('map').value;decor.forEach(d=>{g.save();g.translate(d.x,d.y);if(m===0){if(d.type<.52){g.fillStyle='#244b30';g.beginPath();g.ellipse(2,4,d.r*1.2,d.r*.7,0,0,7);g.fill();g.fillStyle='#4f9b55';g.beginPath();g.arc(-3,-2,d.r*.7,0,7);g.arc(5,-4,d.r*.8,0,7);g.fill()}else if(d.type<.78){g.fillStyle='#725b43';g.beginPath();g.ellipse(0,0,d.r,d.r*.65,.2,0,7);g.fill();g.strokeStyle='#a18a66';g.stroke()}else{g.fillStyle='#e1d66b';g.beginPath();g.arc(0,0,3,0,7);g.fill()}}else if(m===1){if(d.type<.65){g.fillStyle='#80623d';g.fillRect(-3,-d.r,6,d.r*1.5);g.fillStyle='#668247';g.beginPath();g.arc(0,-d.r, d.r*1.2,0,7);g.fill()}else{g.fillStyle='#8b7656';g.beginPath();g.ellipse(0,0,d.r*1.2,d.r*.7,0,0,7);g.fill();g.fillStyle='#c2a77c';g.fillRect(-d.r*.5,-2,d.r,3)}}else{g.fillStyle='#4a342b';g.fillRect(-3,-d.r,6,d.r*1.5);g.fillStyle=d.type<.5?'#163d32':'#23513a';g.beginPath();g.arc(0,-d.r,d.r*1.45,0,7);g.arc(-d.r*.65,-d.r*.4,d.r,0,7);g.arc(d.r*.65,-d.r*.4,d.r,0,7);g.fill();g.fillStyle='#b2b7a0';g.globalAlpha=.65;g.beginPath();g.ellipse(d.r*.6,d.r*.5,3,2,0,0,7);g.fill()}g.restore()})}
+function roadDraw(){let p=path();g.lineCap='round';g.lineJoin='round';g.strokeStyle='#252e35';g.lineWidth=92;g.beginPath();p.forEach((a,i)=>i?g.lineTo(...a):g.moveTo(...a));g.stroke();g.strokeStyle=+$('map').value===1?'#c1a06c':'#777b70';g.lineWidth=82;g.beginPath();p.forEach((a,i)=>i?g.lineTo(...a):g.moveTo(...a));g.stroke();g.strokeStyle='#e4d6a1';g.lineWidth=3;g.setLineDash([19,18]);g.beginPath();p.forEach((a,i)=>i?g.lineTo(...a):g.moveTo(...a));g.stroke();g.setLineDash([]);g.fillStyle='#ffdc78';g.font='bold 18px system-ui';g.fillText('ENTRY',22,345);g.fillStyle='#ff7373';g.beginPath();g.arc(932,p[p.length-1][1],15,0,7);g.fill();g.fillStyle='white';g.font='bold 13px system-ui';g.fillText('BASE',905,p[p.length-1][1]+35)}
+function towerDraw(t,i){let colors={scout:['#9baebe','#405b72'],rapid:['#f6d56c','#85612c'],cannon:['#f29a6e','#75402f'],support:['#d6a8ff','#68479a'],sniper:['#b9d9e8','#34536a'],flame:['#ffb35b','#8a3f26'],frost:['#9deaff','#276b91'],medic:['#a5f0b0','#28764b'],rangebuff:['#f3dcff','#594b9b']},c=colors[t.k];g.save();g.translate(t.x,t.y);g.shadowColor='#101820';g.shadowBlur=9;g.shadowOffsetY=5;g.fillStyle='#17232d';g.beginPath();g.ellipse(0,8,27,19,0,0,7);g.fill();g.shadowBlur=0;g.shadowOffsetY=0;g.fillStyle='#526273';g.beginPath();g.arc(0,0,22,0,7);g.fill();g.strokeStyle='#aab9c7';g.lineWidth=3;g.stroke();g.fillStyle=c[1];g.beginPath();g.arc(0,-3,16,0,7);g.fill();g.strokeStyle=c[0];g.lineWidth=3;g.stroke();if(['support','medic','rangebuff'].includes(t.k)){g.strokeStyle='#f1d7ff';g.lineWidth=5;g.beginPath();g.arc(0,-3,11,0,Math.PI*1.65);g.stroke();g.fillStyle='#fff2ff';g.beginPath();g.arc(0,-3,5,0,7);g.fill()}else{g.rotate(-.45);g.fillStyle=c[0];g.fillRect(-4,-27,8,31);g.fillStyle='#202a35';g.fillRect(-3,-32,6,8);g.fillStyle='#d8e2e9';g.fillRect(-2,-24,4,18)}g.fillStyle='#fff';g.font='bold 10px system-ui';g.textAlign='center';g.fillText(''+t.l,0,35);if(i===chosen){g.strokeStyle='#c7ff8b';g.lineWidth=4;g.beginPath();g.arc(0,0,29,0,7);g.stroke()}g.restore()}
+function draw(){let m=+$('map').value;g.fillStyle=['#356a43','#9a8254','#203d34'][m];g.fillRect(0,0,960,600);g.globalAlpha=.18;for(let i=0;i<90;i++){g.fillStyle=i%2?'#a9d18c':'#0b241a';g.beginPath();g.arc(rand(i+77)*960,rand(i+900)*600,18+rand(i+33)*30,0,7);g.fill()}g.globalAlpha=1;scenery();roadDraw();towers.forEach(towerDraw);zombies.forEach(a=>{g.fillStyle='#b0df73';g.beginPath();g.arc(a.x,a.y,15,0,7);g.fill();g.fillStyle='#4b7e43';g.beginPath();g.arc(a.x-5,a.y-3,3,0,7);g.arc(a.x+5,a.y-3,3,0,7);g.fill();g.fillStyle='#202b24';g.fillRect(a.x-12,a.y-22,24,4);g.fillStyle='#ff6b65';g.fillRect(a.x-12,a.y-22,24*Math.max(0,a.hp/a.max),4)});shots.forEach(b=>{g.fillStyle='#fff2ad';g.shadowColor='#ffca5c';g.shadowBlur=9;g.beginPath();g.arc(b.x,b.y,5,0,7);g.fill();g.shadowBlur=0})}
+function ui(){$('cash').textContent=cash;$('wave').textContent=wave;$('hp').textContent=hp;$('start').disabled=running||wave>=10||hp<=0}function say(s){$('msg').textContent=s}
+function pos(e){let r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*960/r.width,y:(e.clientY-r.top)*600/r.height}}
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();let p=pos(e),hit=towers.findIndex(t=>Math.hypot(t.x-p.x,t.y-p.y)<30);if(hit>=0){chosen=hit;draw();say('Turret selected. Upgrade it or keep building.');return}if(running)return;let cost=specs[kind].cost;if(cash<cost){say('Not enough cash for this turret.');return}if(onRoad(p.x,p.y,57)||p.x<20||p.x>940||p.y<20||p.y>580||towers.some(t=>Math.hypot(t.x-p.x,t.y-p.y)<53)){say('Choose an open patch of grass.');return}towers.push({x:p.x,y:p.y,k:kind,l:1,last:0});cash-=cost;chosen=towers.length-1;ui();draw();say('Defense deployed!')});
+$('tools').onclick=e=>{let b=e.target.closest('[data-t]');if(!b)return;kind=b.dataset.t;document.querySelectorAll('[data-t]').forEach(a=>a.classList.toggle('selected',a===b));chosen=-1;say('Selected '+kind+'. Tap open grass to deploy.');draw()};
+$('map').onchange=()=>{makeDecor();draw()};$('size').onclick=()=>{let full=$('mapWrap').classList.toggle('full');$('size').textContent=full?'▣ Compact map':'⛶ Full-size map';draw()};
+$('cancel').onclick=()=>{chosen=-1;draw();say('Selection cleared.')};$('upgrade').onclick=()=>{let t=towers[chosen];if(!t){say('Tap a turret first.');return}let cost=45*t.l;if(cash<cost){say('Upgrade costs $'+cost+'.');return}cash-=cost;t.l++;ui();draw();say('Turret upgraded to level '+t.l+'.')};
+$('start').onclick=()=>{if(running||wave>=10||hp<=0)return;wave++;running=true;spawned=0;ui();say('Wave '+wave+' incoming!')};
+function at(d){let p=path();for(let i=0;i<p.length-1;i++){let a=p[i],b=p[i+1],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(d<=len){let q=d/len;return[a[0]+(b[0]-a[0])*q,a[1]+(b[1]-a[1])*q]}d-=len}return[950,p[p.length-1][1]]}
+function tick(){frame++;if(running){let total=5+wave*2;if(spawned<total&&frame%42===0){zombies.push({d:0,hp:45+wave*10,max:45+wave*10,s:1.05+wave*.04});spawned++}zombies.forEach(a=>{a.d+=a.s;[a.x,a.y]=at(a.d);if(a.d>1300){a.hp=0;hp=Math.max(0,hp-1)}});towers.forEach(t=>{let s=specs[t.k];if(!s.damage)return;let buffs=towers.filter(b=>b!==t&&Math.hypot(b.x-t.x,b.y-t.y)<specs[b.k].range&&(b.k==='support'||b.k==='medic'||b.k==='rangebuff'));let target=zombies.find(a=>a.hp>0&&Math.hypot(a.x-t.x,a.y-t.y)<s.range);if(target&&frame-t.last>s.rate){shots.push({x:t.x,y:t.y,target,damage:s.damage*(1+(t.l-1)*.35)*(1+buffs.length*.15)});t.last=frame}});shots.forEach(b=>{if(!b.target||b.target.hp<=0){b.dead=1;return}let dx=b.target.x-b.x,dy=b.target.y-b.y,d=Math.hypot(dx,dy);if(d<10){b.target.hp-=b.damage;b.dead=1;if(b.target.hp<=0)cash+=14}else{b.x+=dx/d*9;b.y+=dy/d*9}});shots=shots.filter(b=>!b.dead);zombies=zombies.filter(a=>a.hp>0);if(spawned>=total&&!zombies.length){running=false;cash+=40;tokens+=1+(wave%3===0?1:0);saveMeta();renderMeta();say(wave===10?'🏆 Victory! You defended all 10 waves!':'Wave cleared! +$40 bonus. Prepare for the next wave.')}}ui();draw();requestAnimationFrame(tick)}
+
+$('towerShop').onclick=e=>{let b=e.target.closest('[data-buy]');if(!b)return;let k=b.dataset.buy,v=shopDefs[k];if(tokens<v.cost){say('You need '+v.cost+' tokens to unlock that tower.');return}tokens-=v.cost;owned[k]=true;equipped[k]=true;saveMeta();renderMeta();say(v.name+' unlocked and equipped!')};
+$('ownedTowers').onclick=e=>{let build=e.target.closest('[data-build]');if(build){kind=build.dataset.build;say('Selected '+kind+'. Tap grass to place it.');return}let b=e.target.closest('[data-equip]');if(!b)return;let k=b.dataset.equip,next=!equipped[k],isSupport=(k==='support'||shopDefs[k]?.role==='support'),count=Object.keys(equipped).filter(q=>equipped[q]&&((q==='support'||shopDefs[q]?.role==='support')===isSupport)).length;if(next&&count>=10){say('You can equip up to 10 '+(isSupport?'support':'attacking')+' towers.');return}equipped[k]=next;saveMeta();renderMeta();say((equipped[k]?'Equipped ':'Stored ')+k+'.')};
+$('claimAfk').onclick=()=>{let amount=pendingAfk();if(amount<=0){say('Your AFK machine has no coins ready yet.');return}cash+=amount;localStorage.setItem('zs_afk_last',String(Date.now()));ui();renderMeta();say('Collected '+amount+' AFK coins!')};
+$('upgradeMachine').onclick=()=>{let cost=150*machineLevel;if(cash<cost){say('Machine upgrade costs $'+cost+'.');return}cash-=cost;machineLevel++;ui();saveMeta();renderMeta();say('AFK machine upgraded!')};
+$('buyMachine').onclick=()=>{if(afkMachines>=3){say('All 3 generator bays are unlocked!');return}if(tokens<5){say('You need 5 tokens for another AFK machine.');return}tokens-=5;afkMachines++;saveMeta();renderMeta();say('New generator bay online! AFK production increased.')};
+$('afkBoost').onclick=()=>{if(tokens<3){say('You need 3 tokens for an AFK boost.');return}tokens-=3;afkBoostLevel++;saveMeta();renderMeta();say('AFK earnings boosted!')};
+loadMeta();if(!localStorage.getItem('zs_afk_last'))localStorage.setItem('zs_afk_last',String(Date.now()));renderMeta();
+setInterval(renderMeta,15000);
+makeDecor();draw();ui();requestAnimationFrame(tick);
+})();
+</script></body></html>
